@@ -1,0 +1,5 @@
+django==2.2
+django-crispy-forms==1.12.0
+Pillow
+requests
+geopy

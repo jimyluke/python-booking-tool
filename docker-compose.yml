@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: bash -c "python manage.py runserver 0.0.0.0:88"
+    container_name: resy
+    volumes:
+      - .:/resy
+    ports:
+      - "88:88"
+    restart: always

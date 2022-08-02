@@ -1,0 +1,66 @@
+{% extends 'partials/base.html' %}
+{% block title %}Simulation{% endblock %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+{% include 'partials/topside.html' %}
+<script type="text/javascript">
+  
+
+
+
+function vs(filename){
+     data = JSON.parse('{"filename":"'+filename+'"}');
+    $.post('{% url 'dashboard-optim-vs' %}', data ,function (data) {
+      obj = JSON.parse(JSON.stringify(data));
+      status = data.status;
+      location.reload(true);
+});
+
+}
+
+
+function test(filename){
+     data = JSON.parse('{"filename":"'+filename+'"}');
+    $.post('{% url 'dashboard-optim-test' %}', data ,function (data) {
+      obj = JSON.parse(JSON.stringify(data));
+      alert(JSON.stringify(data))
+
+
+});
+
+}
+
+</script>
+<div class="row" >
+   <div class="col-md-12 mt-4">
+   <div class="col-md-12 text-center">
+      <table class="table-responsive table-striped table-bordered">
+         <thead class="bg-info text-white" >
+            <tr>
+               <th  class="h4 col-md-8">Resy BOT</th>
+               <th  class="h4 col-md-6">Action</th>
+            </tr>
+         </thead>
+         <tbody >
+            {% for file in files %}
+            <tr>
+               <td>{{ file }} </td>
+               <td>
+                  <button class = "btn btn-danger btn-lg"  onclick="vs('{{ file }}')">Delete Config</button>
+                  <button class = "btn btn-warning btn-lg"  onclick="test('{{ file }}')">Launch Script</button>
+                  <a class = "btn btn-primary btn-lg" href="../static/{{ file }}">Download File</a>
+               </td>
+            </tr>
+            {% endfor %}
+         </tbody>
+      </table>
+   </div>
+</div>
+</div>
+<script>
+$( document ).ready(function() {
+ 
+});
+</script>
+{% endblock %}

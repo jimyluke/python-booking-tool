@@ -1,0 +1,75 @@
+{% extends 'partials/base.html' %}
+{% block title %}Sample1 Page{% endblock %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+{% include 'partials/topside.html' %}
+<div class="row my-4">
+    <div class="col-md-12">
+    <h7 style="color:red;">{{ done }}</h7>
+    </div>
+</div>
+<div class="row my-4">
+    <div class="col-md-12">
+    <form enctype="multipart/form-data" method="post"  >
+    {% csrf_token %}
+    <input  class="btn btn-secondary btn-lg btn-block"type="Submit" value="Save configuration"/>
+
+<h4> BOT Parameters </h4>
+ <div class="form-row" style="background-color:#E6E6E6;border-width: 1px;border-style: solid;border-color: black;" >
+  <div class="form-group col-md-6">
+      <label for="mesurement" class="form-label"> Username </label>
+      <input class="form-control" type="string"  name="username" value="davidbarleduc@gmail.com"/>
+    </div>
+    <div class="form-group col-md-6">
+      <label for="mesurement" class="form-label"> Password </label>
+      <input class="form-control" type="string"  name="password" value="Matricula0!"/>
+    </div>
+  </div>
+
+  <div class="form-row" style="background-color:#E6E6E6;border-width: 1px;border-style: solid;border-color: black;" >
+
+    <div class="form-group col-md-6">
+      <label for="mesurement" class="form-label"> Address </label>
+      <input class="form-control" type="string"  name="address" value="7908 Long Beach Boulevard, Harvey Cedars, NJ 08008"/>
+    </div>
+    <div class="form-group col-md-2">
+      <label for="mesurement" class="form-label"> Date </label>
+      <input class="form-control" type="date"  name="date" value="2021-09-03"/>
+    </div>
+
+    <div class="form-group col-md-4">
+      <label for="mesurement" class="form-label"> Desired Seating Time </label>
+      <input class="form-control"  type="time" value="19:15" step="900" name="desired">
+    </div>
+  </div>
+   <div class="form-row" style="background-color:#E6E6E6;border-width: 1px;border-style: solid;border-color: black;" >
+      
+    <div class="form-group col-md-4">
+      <label for="mesurement" class="form-label"> Earliest Acceptable Seating Time </label>
+      <input class="form-control"  type="time" value="18:45" step="900" name="earliest">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="mesurement" class="form-label"> Latest Acceptable Seating Time </label>
+      <input class="form-control"  type="time" value="20:15" step="900" name="lastest">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="mesurement" class="form-label"> Guests </label>
+      <input  class="form-control" type="number" value="4" placeholder="Guests" step="1" min="0" max="100" name="guests"/>
+    </div>
+  </div>
+</form>
+
+
+    </div>
+</div>
+
+
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+ 
+});
+</script>
+{% endblock %}ya
