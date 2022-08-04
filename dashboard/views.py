@@ -43,19 +43,17 @@ def login(username,password):
       'email': username,
       'password': password
     }
-
-
     response = requests.post('https://api.resy.com/3/auth/password', headers=headers, data=data)
     res_data = response.json()
     try:
         auth_token = res_data['token']
     except KeyError:
         print("Incorrect username/password combination")
-        sys.exit()
+        return None, None
     payment_method_string = '{"id":' + str(res_data['payment_method_id']) + '}'
     return auth_token,payment_method_string
 
-def find_table(res_date,party_size,table_time,auth_token,venue_id):
+def find_table(res_date,party_size,table_time,auth_token,venue_id,file_to_use):
     #convert datetime to string
     day = res_date.strftime('%Y-%m-%d')
     params = (
@@ -105,12 +103,13 @@ def make_reservation(auth_token, payment_method_string, config_id,res_date,party
       'struct_payment_method': payment_method_string,
       'source_id': 'resy.com-venue-details'
     }
-
     response = requests.post('https://api.resy.com/3/book', headers=headers, data=data)
 
 
-def try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName, payment_method_string,earliest_time, latest_time):
-    best_table = find_table(day,party_size,table_time,auth_token,restaurantID)
+def try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName, payment_method_string,earliest_time, latest_time, file_to_use):
+    f = open(file_to_use+".txt", "a")
+    info= ""
+    best_table = find_table(day,party_size,table_time,auth_token,restaurantID,file_to_use)
     if best_table is not None:
             hour = datetime.strptime(best_table['date']['start'],"%Y-%m-%d %H:%M:00").hour + datetime.strptime(best_table['date']['start'],"%Y-%m-%d %H:%M:00").minute/60
             if (hour >= earliest_time) and (hour <= latest_time):
@@ -120,8 +119,12 @@ def try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName,
                 if(len(digital_hour.split(":")[1]) == 1):
                     digital_hour += "0" 
                 print ('Successfully reserved a table for ' + str(party_size) + ' at ' + restaurantName + ' at ' + digital_hour)
+                info= 'Successfully reserved a table for ' + str(party_size) + ' at ' + restaurantName + ' at ' + digital_hour+" \n"
+                f.write(info)
             else:
                 print("No tables will ever be available within that time range")
+                info =  "No tables will ever be available within that time range \n"
+                f.write(info)
                 time.sleep(5)
             return 1
 
@@ -132,20 +135,24 @@ def try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName,
         sys.stdout.write("Waiting for reservations to open up... Current time: " + current_time)
         sys.stdout.flush()
         sys.stdout.write('\r')
+        info =  "Waiting for reservations to open up... Current time: " + current_time + "\n"
+        f.write(info)
         return 0
 
 def readconfig(file_to_use):
     dat = open(file_to_use).read().split('\n')
     return [k.split('|:')[1] for k in dat]
 
-def gps_venue_id(address,res_date,party_size,auth_token):
-
+def gps_venue_id(address,res_date,party_size,auth_token,file_to_use):
+    f = open(file_to_use+".txt", "a")
+    info= ""
     geolocator = Nominatim(user_agent="Me")
     try:
         location = geolocator.geocode(address)
     except AttributeError:
         print("That is an invalid address")
-
+        info = info + "That is an invalid address \n"
+        f.write(info)
 
     day = res_date.strftime('%Y-%m-%d')
     params = (
@@ -156,6 +163,8 @@ def gps_venue_id(address,res_date,party_size,auth_token):
      ('party_size', str(party_size)),
     )
     print("loading...")
+    info = info + "loading... \n"
+    f.write(info)
     response = requests.get('https://api.resy.com/4/find', headers=headers, params=params)
     data = response.json()
     
@@ -165,55 +174,67 @@ def gps_venue_id(address,res_date,party_size,auth_token):
         restaurant_name = re.search('"name": "(.*?)",', restaurant_name).group(1)
         venueID = re.search('{"resy": (.*?)}', response.text).group(1)
         print("Making a booking at " + restaurant_name)
+        info = info + "Making a booking at " + restaurant_name+" \n"
+        f.write(info)
         venueNameandID = [restaurant_name, venueID]
+        f.close()
         return(venueNameandID)
     except:
         print("That address is not bookable on Resy")
+        info = info + "That address is not bookable on Resy \n"
+        f.write(info)
+        f.close()
         time.sleep(5)
         return 0 
 
 
 
 def main(file_to_use):
+    f = open(file_to_use+".txt", "w")
     info= ""
     username, password, address, date, table_time, earliest_time, latest_time, guests = readconfig(file_to_use)
     try:
         auth_token,payment_method_string = login(username,password)
     except KeyError:
-        info = info + "Incorrect username/password combination"
         print("Incorrect username/password combination")
-    info = info + 'Logged in succesfully as ' + username
-    print ('Logged in succesfully as ' + username)
-
-
-    '''
-    party_size = int(guests)
-    table_time = float(table_time.split(":")[0]) + (float(table_time.split(":")[1])/60)
-    earliest_time = float(earliest_time.split(":")[0]) + (float(earliest_time.split(":")[1])/60)
-    latest_time = float(latest_time.split(":")[0]) + (float(latest_time.split(":")[1])/60)
-    if(earliest_time > table_time or latest_time < table_time or earliest_time > latest_time or latest_time < earliest_time):
-        print("There was an issue with the times you entered")
-        print("Double check to see if the times you entered make sense (Make sure to use military time)")
-        time.sleep(5)
-        return 0
-    day = datetime.strptime(date,'%m/%d/%Y')
-    venueNameandID = gps_venue_id(address,day, party_size, auth_token)
-    restaurantName= venueNameandID[0]
-    restaurantID = int(venueNameandID[1])
-    
-
-
-    reserved = 0
-    while reserved == 0:
-        try:
-            reserved = try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName, payment_method_string,earliest_time, latest_time)
-        except:
-            with open('failures.csv','ab') as outf:
-                writer = csv.writer(outf)
-                writer.writerow([time.time()])
-    exit = input("The program executed successfully press anything to exit:")
-    '''
-    return info
+    if(auth_token == None):
+        info = "Incorrect username/password combination \n"
+        f.write(info)
+        f.close()
+    else:
+        info = 'Logged in succesfully as ' + username +" \n"
+        print ('Logged in succesfully as ' + username)
+        f.write(info)
+        f.close()
+        party_size = int(guests)
+        table_time = float(table_time.split(":")[0]) + (float(table_time.split(":")[1])/60)
+        earliest_time = float(earliest_time.split(":")[0]) + (float(earliest_time.split(":")[1])/60)
+        latest_time = float(latest_time.split(":")[0]) + (float(latest_time.split(":")[1])/60)
+        if(earliest_time > table_time or latest_time < table_time or earliest_time > latest_time or latest_time < earliest_time):
+            f = open(file_to_use+".txt", "a")
+            print("There was an issue with the times you entered")
+            info = "There was an issue with the times you entered \n"
+            f.write(info)
+            print("Double check to see if the times you entered make sense (Make sure to use military time)")
+            info =  "Double check to see if the times you entered make sense (Make sure to use military time) \n" 
+            f.write(info)
+            f.close()
+            time.sleep(5)
+            return 0
+        day = datetime.strptime(date,'%m/%d/%Y')
+        venueNameandID = gps_venue_id(address,day, party_size, auth_token,file_to_use)
+        restaurantName= venueNameandID[0]
+        restaurantID = int(venueNameandID[1])
+        reserved = 0
+        while reserved == 0:
+            try:
+                reserved = try_table(day,party_size,table_time,auth_token,restaurantID, restaurantName, payment_method_string,earliest_time, latest_time,file_to_use)
+            except:
+                with open('failures.csv','ab') as outf:
+                    writer = csv.writer(outf)
+                    writer.writerow([time.time()])
+        #exit = input("The program executed successfully press anything to exit:")
+        return "Script finished"
 
 
 @login_required(login_url='user-login')
@@ -226,11 +247,9 @@ def index(request):
 def uniquify(path):
     filename, extension = os.path.splitext(path)
     counter = 1
-
     while os.path.exists(path):
         path = filename + " (" + str(counter) + ")" + extension
         counter += 1
-
     return path
 
 @login_required(login_url='user-login')
@@ -254,6 +273,8 @@ def sample1(request):
         }
         return render(request, 'dashboard/sample1.html', context)
     return render(request, 'dashboard/sample1.html')
+
+
 def generateConf(username,password,address,date,desired,earliest,lastest,guests):
     example = str(pathlib.Path(__file__).parent.resolve())+"/../static/template/requests.config"
     file_to_generate = str(pathlib.Path(__file__).parent.resolve())+"/../static/requests.config"
@@ -277,7 +298,7 @@ def simulation(request):
     staticDIR= str(pathlib.Path(__file__).parent.resolve())+"/../static/"
     from os import listdir
     from os.path import isfile,join
-    onlyfiles = [f for f in listdir(staticDIR) if isfile(join(staticDIR, f))]
+    onlyfiles = [f for f in listdir(staticDIR) if isfile(join(staticDIR, f)) and not f.endswith('.txt')]
     context = {
         'files': onlyfiles,
     }
@@ -302,6 +323,37 @@ def generatetest(filename):
         print(e)
     pass
 
+def checkreserv(auth_token):
+    headers['x-resy-auth-token'] = auth_token
+    response = requests.get('https://staging-api.resy.com/3/user/reservations', headers=headers)
+    res_data = response.json()
+    return res_data
+
+def main2(file_to_use):
+    username, password, address, date, table_time, earliest_time, latest_time, guests = readconfig(file_to_use)
+    try:
+        auth_token,payment_method_string = login(username,password)
+    except Exception as e:
+        print(e)
+        print("Incorrect username/password combination")
+        return "Incorrect username/password combination"
+    if(auth_token==None):
+        return "Incorrect username/password combination"
+    print('Logged in succesfully as ' + username )
+    print(auth_token)
+    res_data = checkreserv(auth_token)
+    return res_data
+
+def generatereservations(filename):
+    try:
+        file_to_use = str(pathlib.Path(__file__).parent.resolve())+"/../static/"+filename
+        #Main of script
+        return main2(file_to_use)
+    except Exception as e:
+        print(e)
+        return "Incorrect username/password combination"
+
+
 @csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
 @login_required(login_url='user-login')
 def optimvs(request):
@@ -311,6 +363,26 @@ def optimvs(request):
         contenido = "Ok"
         data = {
             'status': contenido
+        }
+
+    except Exception as e:
+        data = {
+            'status': str(e)
+        }
+    dump = json.dumps(data)
+    return HttpResponse(dump, content_type='application/json')
+
+
+@csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
+@login_required(login_url='user-login')
+def optimreservations(request):
+    filename = request.POST.getlist("filename")[0]
+    try:
+        contenido = generatereservations(filename)
+        print("hello")
+        print(contenido)
+        data = {
+            'result': contenido
         }
 
     except Exception as e:

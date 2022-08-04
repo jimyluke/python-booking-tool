@@ -20,15 +20,24 @@ function vs(filename){
 }
 
 
+function reservations(filename){
+     data = JSON.parse('{"filename":"'+filename+'"}');
+    $.post('{% url 'dashboard-optim-reservations' %}', data ,function (data) {
+      obj = JSON.parse(JSON.stringify(data));
+      alert(JSON.stringify(data));
+});
+}
+
+
+
 function test(filename){
      data = JSON.parse('{"filename":"'+filename+'"}');
     $.post('{% url 'dashboard-optim-test' %}', data ,function (data) {
       obj = JSON.parse(JSON.stringify(data));
-      alert(JSON.stringify(data))
-
-
+      alert(JSON.stringify(data));
 });
 
+alert("Script launched correctly");
 }
 
 </script>
@@ -48,8 +57,10 @@ function test(filename){
                <td>{{ file }} </td>
                <td>
                   <button class = "btn btn-danger btn-lg"  onclick="vs('{{ file }}')">Delete Config</button>
-                  <button class = "btn btn-warning btn-lg"  onclick="test('{{ file }}')">Launch Script</button>
-                  <a class = "btn btn-primary btn-lg" href="../static/{{ file }}">Download File</a>
+                  <button class = "btn btn-warning btn-lg"  onclick="test('{{ file }}')">Script Launch</button>
+                  <a class = "btn btn-primary btn-lg" href="../static/{{ file }}">Dowld Config</a>
+                  <a class = "btn btn-info btn-lg" href="../static/{{ file }}.txt">Check Result</a>
+                  <button class = "btn btn-warning btn-lg"  onclick="reservations('{{ file }}')">Reservations</button>
                </td>
             </tr>
             {% endfor %}
