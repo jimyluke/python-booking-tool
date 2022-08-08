@@ -28,6 +28,14 @@ function reservations(filename){
 });
 }
 
+function db(filename){
+     data = JSON.parse('{"filename":"'+filename+'"}');
+    $.post('{% url 'dashboard-optim-db' %}', data ,function (data) {
+      obj = JSON.parse(JSON.stringify(data));
+      alert(JSON.stringify(data));
+});
+}
+
 
 
 function test(filename){
@@ -40,6 +48,13 @@ function test(filename){
 alert("Script launched correctly");
 }
 
+function testlogin(filename){
+     data = JSON.parse('{"filename":"'+filename+'"}');
+    $.post('{% url 'dashboard-optim-testlogin' %}', data ,function (data) {
+      obj = JSON.parse(JSON.stringify(data));
+      alert(JSON.stringify(data));
+});
+  }
 </script>
 <div class="row" >
    <div class="col-md-12 mt-4">
@@ -60,7 +75,9 @@ alert("Script launched correctly");
                   <button class = "btn btn-warning btn-lg"  onclick="test('{{ file }}')">Script Launch</button>
                   <a class = "btn btn-primary btn-lg" href="../static/{{ file }}">Dowld Config</a>
                   <a class = "btn btn-info btn-lg" href="../static/{{ file }}.txt">Check Result</a>
-                  <button class = "btn btn-warning btn-lg"  onclick="reservations('{{ file }}')">Reservations</button>
+                  <button class = "btn btn-secondary btn-lg"  onclick="reservations('{{ file }}')">Reservations</button>
+                  <button class = "btn btn-light btn-lg"  onclick="db('{{ file }}')">DB Snapshot</button>
+                  <button class = "btn btn-light btn-dark"  onclick="testlogin('{{ file }}')">Test Login</button>
                </td>
             </tr>
             {% endfor %}
@@ -71,7 +88,15 @@ alert("Script launched correctly");
 </div>
 <script>
 $( document ).ready(function() {
- 
+
+
+
+
+
+
+
+
+
 });
 </script>
 {% endblock %}

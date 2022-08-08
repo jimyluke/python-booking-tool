@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from .models import History
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .decorators import auth_users, allowed_users
@@ -188,6 +189,23 @@ def gps_venue_id(address,res_date,party_size,auth_token,file_to_use):
         return 0 
 
 
+def main3(file_to_use):
+    f = open(file_to_use+".txt", "w")
+    info= ""
+    username, password, address, date, table_time, earliest_time, latest_time, guests = readconfig(file_to_use)
+    try:
+        auth_token,payment_method_string = login(username,password)
+    except KeyError:
+        print("Incorrect username/password combination")
+        info = "Incorrect username/password combination \n"
+        return info
+    if(auth_token == None):
+        info = "Incorrect username/password combination \n"
+        return info
+    else:
+        info = 'Logged in succesfully as ' + username +' with password '+ password
+        print ('Logged in succesfully as ' + username +' with password '+ password )
+        return info
 
 def main(file_to_use):
     f = open(file_to_use+".txt", "w")
@@ -284,7 +302,7 @@ def generateConf(username,password,address,date,desired,earliest,lastest,guests)
     ex = ex.replace("Username|:user123", "Username|:"+username)
     ex = ex.replace("Password|:pass123", "Password|:"+password)
     ex = ex.replace("Address|:address", "Address|:"+address)
-    ex = ex.replace("Date|:09/03/2021", "Date|:"+datetime.strptime(date, "%Y-%m-%d").strftime("%d/%m/%Y"))
+    ex = ex.replace("Date|:09/03/2021", "Date|:"+datetime.strptime(date, "%Y-%m-%d").strftime("%m/%d/%Y"))
     ex = ex.replace("Desired Seating Time|:19:15", "Desired Seating Time|:"+desired)
     ex = ex.replace("Earliest Acceptable Seating Time|:18:45", "Earliest Acceptable Seating Time|:"+earliest)
     ex = ex.replace("Latest Acceptable Seating Time|:20:15", "Latest Acceptable Seating Time|:"+lastest)
@@ -323,9 +341,18 @@ def generatetest(filename):
         print(e)
     pass
 
+def generatetestlogin(filename):
+    try:
+        file_to_use = str(pathlib.Path(__file__).parent.resolve())+"/../static/"+filename
+        #Main of script
+        return main3(file_to_use)
+    except Exception as e:
+        print(e)
+    pass
+
 def checkreserv(auth_token):
     headers['x-resy-auth-token'] = auth_token
-    response = requests.get('https://staging-api.resy.com/3/user/reservations', headers=headers)
+    response = requests.get('https://api.resy.com/3/user/reservations', headers=headers)
     res_data = response.json()
     return res_data
 
@@ -353,6 +380,42 @@ def generatereservations(filename):
         print(e)
         return "Incorrect username/password combination"
 
+def generatedb(filename,user):
+    try:
+        configfile = str(pathlib.Path(__file__).parent.resolve())+"/../static/"+filename
+        #Main of script
+        with open(configfile, 'r') as f:
+            config= f.read()
+        f.close()
+        with open(configfile+".txt", 'r') as f:
+            result= f.read()
+        f.close()
+        info= ""
+        username, password, address, date, table_time, earliest_time, latest_time, guests = readconfig(configfile)
+        try:
+            auth_token,payment_method_string = login(username,password)
+        except KeyError:
+            print("Incorrect username/password combination")
+            info = "Incorrect username/password combination \n"
+        if(auth_token == None):
+            info = "Incorrect username/password combination \n"
+        else:
+            info = 'Logged in succesfully as ' + username +' with password '+ password
+            print ('Logged in succesfully as ' + username +' with password '+ password )
+        history = History()
+        history.username = username
+        history.password = password
+        history.auth_token = auth_token
+        history.login_state = info
+        history.configuration =config
+        history.result = result
+        history.reservation = checkreserv(auth_token)
+        history.user = user
+        history.save()
+    except Exception as e:
+        print(e)
+        return e
+
 
 @csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
 @login_required(login_url='user-login')
@@ -379,7 +442,6 @@ def optimreservations(request):
     filename = request.POST.getlist("filename")[0]
     try:
         contenido = generatereservations(filename)
-        print("hello")
         print(contenido)
         data = {
             'result': contenido
@@ -394,10 +456,44 @@ def optimreservations(request):
 
 @csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
 @login_required(login_url='user-login')
+def optimdb(request):
+    filename = request.POST.getlist("filename")[0]
+    try:
+        contenido = generatedb(filename,request.user)
+        contenido = "Snapshot created correctly."
+        data = {
+            'result': contenido
+        }
+
+    except Exception as e:
+        data = {
+            'status': str(e)
+        }
+    dump = json.dumps(data)
+    return HttpResponse(dump, content_type='application/json')
+@csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
+@login_required(login_url='user-login')
 def optimtest(request):
     filename = request.POST.getlist("filename")[0]
     try:
         contenido = generatetest(filename)
+        data = {
+            'status': contenido
+        }
+
+    except Exception as e:
+        data = {
+            'status': str(e)
+        }
+    dump = json.dumps(data)
+    return HttpResponse(dump, content_type='application/json')
+
+@csrf_exempt #This skips csrf validation. Use csrf_protect to have validation
+@login_required(login_url='user-login')
+def optimtestlogin(request):
+    filename = request.POST.getlist("filename")[0]
+    try:
+        contenido = generatetestlogin(filename)
         data = {
             'status': contenido
         }

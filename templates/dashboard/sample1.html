@@ -35,23 +35,23 @@
     </div>
     <div class="form-group col-md-2">
       <label for="mesurement" class="form-label"> Date </label>
-      <input class="form-control" type="date"  name="date" value="2021-09-03"/>
+      <input class="form-control" type="date"  name="date" id="dt" />
     </div>
 
     <div class="form-group col-md-4">
       <label for="mesurement" class="form-label"> Desired Seating Time </label>
-      <input class="form-control"  type="time" value="19:15" step="900" name="desired">
+      <input class="form-control"  type="time" value="19:15" step="900" name="desired" />
     </div>
   </div>
    <div class="form-row" style="background-color:#E6E6E6;border-width: 1px;border-style: solid;border-color: black;" >
       
     <div class="form-group col-md-4">
       <label for="mesurement" class="form-label"> Earliest Acceptable Seating Time </label>
-      <input class="form-control"  type="time" value="18:45" step="900" name="earliest">
+      <input class="form-control"  type="time" value="18:45" step="900" name="earliest" />
     </div>
     <div class="form-group col-md-4">
       <label for="mesurement" class="form-label"> Latest Acceptable Seating Time </label>
-      <input class="form-control"  type="time" value="20:15" step="900" name="lastest">
+      <input class="form-control"  type="time" value="20:15" step="900" name="lastest"/>
     </div>
     <div class="form-group col-md-4">
       <label for="mesurement" class="form-label"> Guests </label>
@@ -69,7 +69,25 @@
 <script type="text/javascript">
 
 $( document ).ready(function() {
- 
+
+
+
+$(function(){
+    var dtToday = new Date();
+    var month = dtToday.getMonth() + 1;
+    var day = dtToday.getDate();
+    var year = dtToday.getFullYear();
+    if(month < 10)
+        month = '0' + month.toString();
+    if(day < 10)
+        day = '0' + day.toString();
+    var maxDate = year + '-' + month + '-' + day;
+    $('#dt').attr('min', maxDate);
+});
+
+
+
+
 });
 </script>
 {% endblock %}
