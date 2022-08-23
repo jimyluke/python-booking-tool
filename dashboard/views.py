@@ -285,7 +285,7 @@ def sample1(request):
         earliest = request.POST["earliest"]
         lastest = request.POST["lastest"]
         guests = request.POST["guests"]
-        generateConf(username,password,address,date,desired,earliest,lastest,guests)
+        generateConf(request,username,password,address,date,desired,earliest,lastest,guests)
         context = {
         'done': "New file successfully generated",
         }
@@ -293,9 +293,9 @@ def sample1(request):
     return render(request, 'dashboard/sample1.html')
 
 
-def generateConf(username,password,address,date,desired,earliest,lastest,guests):
+def generateConf(request,username,password,address,date,desired,earliest,lastest,guests):
     example = str(pathlib.Path(__file__).parent.resolve())+"/../static/template/requests.config"
-    file_to_generate = str(pathlib.Path(__file__).parent.resolve())+"/../static/requests.config"
+    file_to_generate = str(pathlib.Path(__file__).parent.resolve())+"/../static/requests_"+str(request.user.username)+".config"
     file_to_generate = uniquify(file_to_generate)
     with open(example, 'r') as f:
         ex= f.read()
@@ -316,7 +316,7 @@ def simulation(request):
     staticDIR= str(pathlib.Path(__file__).parent.resolve())+"/../static/"
     from os import listdir
     from os.path import isfile,join
-    onlyfiles = [f for f in listdir(staticDIR) if isfile(join(staticDIR, f)) and not f.endswith('.txt')]
+    onlyfiles = [f for f in listdir(staticDIR) if isfile(join(staticDIR, f)) and not f.endswith('.txt') and  (str(request.user.username) in str(f)) ]
     context = {
         'files': onlyfiles,
     }

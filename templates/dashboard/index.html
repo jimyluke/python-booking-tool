@@ -1,7 +1,7 @@
 {% extends 'partials/base.html' %}
 {% block title %}Home Page{% endblock %}
 {% block content %}
-{% if user.is_authenticated and user.is_staff and user.is_superuser %}
+{% if user.is_authenticated  %}
 {% include 'partials/topside.html' %}
 {% else %}
 {% include 'dashboard/newuser.html' %}
