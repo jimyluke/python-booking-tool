@@ -39,7 +39,43 @@ headers = {
      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
 }
 
+
+def find_reservation_id(venue_url,file_to_use):
+    """
+    Finds venue ID from venue URL.
+    """
+    try:
+        f = open(file_to_use+".txt", "a")
+        info= ""
+        matches = re.search(r"https://resy\.com/cities/([\w]*)\/([\w-]*).*", venue_url)
+        if matches is None:
+            info = info + "That is an invalid venue url, we will work with adress \n"
+            f.write(info)
+            return None
+        city, restaurant = matches.groups()
+        result = requests.get(
+            f"https://api.resy.com/3/venue?url_slug={restaurant}&location={city}",
+            headers=headers,
+        )
+        result.raise_for_status()
+        restaurant_name = str(result.json()["venue_group"]["name"])
+        venueID  = int(result.json()["id"]["resy"])
+        info = info + "Making a booking at " + restaurant_name+" with ID "+str(venueID)+" \n"
+        f.write(info)
+        venueNameandID= [restaurant_name, venueID]
+        f.close()
+        return(venueNameandID)
+    except KeyError:
+        print("Incorrect venue_url method")
+        info = info + "Incorrect venue_url method, we will work with adress \n"
+        f.write(info)
+        f.close()
+        return None
+
+
+
 def login(username,password):
+    #print(find_reservation_id("https://resy.com/cities/hou/chapman-and-kirby?date=2022-08-24&seats=2"))
     data = {
       'email': username,
       'password': password
@@ -152,7 +188,7 @@ def gps_venue_id(address,res_date,party_size,auth_token,file_to_use):
         location = geolocator.geocode(address)
     except AttributeError:
         print("That is an invalid address")
-        info = info + "That is an invalid address \n"
+        info = info + "That is an invalid address "
         f.write(info)
 
     day = res_date.strftime('%Y-%m-%d')
@@ -168,8 +204,6 @@ def gps_venue_id(address,res_date,party_size,auth_token,file_to_use):
     f.write(info)
     response = requests.get('https://api.resy.com/4/find', headers=headers, params=params)
     data = response.json()
-    
-    
     try:
         restaurant_name = re.search('"name": (.*?) "type":', response.text).group(1)
         restaurant_name = re.search('"name": "(.*?)",', restaurant_name).group(1)
@@ -240,7 +274,9 @@ def main(file_to_use):
             time.sleep(5)
             return 0
         day = datetime.strptime(date,'%m/%d/%Y')
-        venueNameandID = gps_venue_id(address,day, party_size, auth_token,file_to_use)
+        venueNameandID = find_reservation_id(address,file_to_use)
+        if(venueNameandID is None):
+            venueNameandID = gps_venue_id(address,day, party_size, auth_token,file_to_use)
         restaurantName= venueNameandID[0]
         restaurantID = int(venueNameandID[1])
         reserved = 0
